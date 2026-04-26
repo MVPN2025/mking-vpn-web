@@ -1,62 +1,194 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="my">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M KING VPN DASHBOARD</title>
+    <title>M King VPN - Pro Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f4; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input { display: block; width: 100%; margin-bottom: 10px; padding: 10px; }
-        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        :root { --main-color: #2563eb; }
+        .bg-custom { background-color: var(--main-color); }
+        .text-custom { color: var(--main-color); }
+        .border-custom { border-color: var(--main-color); }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 min-h-screen pb-20">
 
-<div class="card">
-    <h2>Create VPN Account</h2>
-    <input type="text" id="vpn_username" placeholder="Username">
-    <input type="password" id="vpn_password" placeholder="Password">
-    <button onclick="createVPN()">+ Create VPN</button>
-</div>
+    <div id="headerBg" class="bg-custom p-6 text-white rounded-b-[2.5rem] shadow-lg relative transition-all duration-500">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-black italic">M KING VPN</h1>
+                <p id="userEmail" class="text-[10px] opacity-80 italic tracking-wider">loading...</p>
+            </div>
+            <button onclick="toggleMenu('langMenu')" class="bg-white/20 p-2 rounded-xl active:scale-90 transition-all">
+                <i class="fa-solid fa-language text-xl"></i>
+            </button>
+        </div>
 
-<script>
-    // မင်းရဲ့ VPS IP နဲ့ ချိတ်ထားတဲ့ API URL
-    const API_URL = "http://157.85.97.140:5000/create-ssh";
+        <div class="bg-white mt-6 rounded-3xl p-6 shadow-xl flex justify-between items-center border border-gray-100">
+            <div>
+                <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest" id="text-balance">Balance</p>
+                <h2 class="text-3xl font-black text-gray-800"><span id="balance">0.00</span> <span class="text-sm font-bold text-gray-400">THB</span></h2>
+            </div>
+            <button onclick="openModal('topupModal')" class="bg-custom text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-all" id="btn-topup">Top Up</button>
+        </div>
+    </div>
 
-    async function createVPN() {
-        const userName = document.getElementById('vpn_username').value;
-        const userPass = document.getElementById('vpn_password').value;
+    <div class="p-6 space-y-4">
+        <button onclick="createVPN()" class="w-full bg-custom text-white font-bold py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
+            <i class="fa-solid fa-plus-circle text-xl"></i> <span id="btn-create">Create VPN</span>
+        </button>
 
-        if (!userName || !userPass) {
-            alert("ကျေးဇူးပြု၍ Username နှင့် Password ထည့်ပါ။");
-            return;
+        <div class="grid grid-cols-3 gap-4">
+            <button onclick="openModal('themeModal')" class="bg-white p-4 rounded-3xl shadow-sm border border-gray-50 text-center active:scale-90 transition-all">
+                <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-2"><i class="fa-solid fa-palette text-orange-500"></i></div>
+                <p class="text-[10px] font-bold text-gray-500 uppercase" id="menu-theme">Theme</p>
+            </button>
+            <button onclick="openModal('settingModal')" class="bg-white p-4 rounded-3xl shadow-sm border border-gray-50 text-center active:scale-90 transition-all">
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2"><i class="fa-solid fa-cog text-blue-500"></i></div>
+                <p class="text-[10px] font-bold text-gray-500 uppercase" id="menu-setting">Settings</p>
+            </button>
+            <button onclick="handleLogout()" class="bg-white p-4 rounded-3xl shadow-sm border border-gray-50 text-center active:scale-90 transition-all">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2"><i class="fa-solid fa-sign-out-alt text-red-500"></i></div>
+                <p class="text-[10px] font-bold text-gray-500 uppercase" id="menu-logout">Logout</p>
+            </button>
+        </div>
+    </div>
+
+    <div id="topupModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl">
+            <div class="p-6 text-center">
+                <h3 class="font-bold text-lg mb-2 text-gray-800">Scan QR to Top Up</h3>
+                <div class="bg-gray-50 p-4 rounded-3xl mb-4 border border-gray-100">
+                    <img src="https://raw.githubusercontent.com/MVPN2025/MoVPN/main/IMG_20260426_064810.jpg" class="w-full h-auto max-h-60 object-contain mx-auto rounded-xl shadow-sm">
+                </div>
+
+                <input type="file" id="slipInput" class="hidden" accept="image/*" onchange="previewSlip()">
+                <button id="uploadBtn" onclick="document.getElementById('slipInput').click()" class="w-full border-2 border-dashed border-blue-200 py-4 rounded-2xl text-blue-600 text-sm mb-2 font-bold hover:bg-blue-50 transition-all">
+                    <i class="fa-solid fa-image mr-2"></i> <span id="uploadText">Upload Slip (စလစ်တင်ရန်)</span>
+                </button>
+
+                <button id="sendBtn" onclick="goToTelegram()" class="hidden w-full bg-[#0088cc] text-white py-4 rounded-2xl font-bold mb-4 shadow-lg active:scale-95 transition-all">
+                    <i class="fa-brands fa-telegram mr-2 text-lg"></i> SEND TO TELEGRAM
+                </button>
+
+                <button onclick="closeModal('topupModal')" class="w-full bg-gray-100 py-4 rounded-2xl font-bold text-gray-500">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="themeModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end justify-center">
+        <div class="bg-white w-full rounded-t-[2.5rem] p-8 animate-slide-up shadow-2xl">
+            <h3 class="font-bold mb-6 text-center text-gray-800">Select Theme Color</h3>
+            <div class="flex justify-around mb-8">
+                <div onclick="changeColor('#2563eb')" class="w-12 h-12 bg-blue-600 rounded-2xl cursor-pointer shadow-lg active:scale-90 transition-all"></div>
+                <div onclick="changeColor('#db2777')" class="w-12 h-12 bg-pink-600 rounded-2xl cursor-pointer shadow-lg active:scale-90 transition-all"></div>
+                <div onclick="changeColor('#059669')" class="w-12 h-12 bg-emerald-600 rounded-2xl cursor-pointer shadow-lg active:scale-90 transition-all"></div>
+                <div onclick="changeColor('#7c3aed')" class="w-12 h-12 bg-violet-600 rounded-2xl cursor-pointer shadow-lg active:scale-90 transition-all"></div>
+                <div onclick="changeColor('#111827')" class="w-12 h-12 bg-gray-900 rounded-2xl cursor-pointer shadow-lg active:scale-90 transition-all"></div>
+            </div>
+            <button onclick="closeModal('themeModal')" class="w-full bg-gray-100 py-4 rounded-2xl font-bold text-gray-600">Done</button>
+        </div>
+    </div>
+
+    <div id="settingModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl text-center">
+            <h3 class="font-bold text-lg mb-6 text-gray-800">Settings</h3>
+            <button onclick="resetPassword()" class="w-full flex items-center justify-between p-5 bg-gray-50 rounded-2xl mb-3 active:scale-95 transition-all">
+                <div class="flex items-center gap-3"><i class="fa-solid fa-key text-blue-500"></i><span class="text-sm font-bold text-gray-700">Change Password</span></div>
+                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+            </button>
+            <button onclick="closeModal('settingModal')" class="w-full bg-gray-100 py-4 rounded-2xl font-bold text-gray-500 mt-4">Back</button>
+        </div>
+    </div>
+
+    <div id="langMenu" class="hidden fixed top-20 right-6 bg-white shadow-2xl rounded-2xl p-2 z-50 border border-gray-50">
+        <button onclick="setLang('en')" class="block w-full px-8 py-3 text-sm font-bold hover:bg-gray-50 rounded-xl text-left">English</button>
+        <button onclick="setLang('mm')" class="block w-full px-8 py-3 text-sm font-bold hover:bg-gray-50 rounded-xl text-left">မြန်မာ</button>
+        <button onclick="setLang('th')" class="block w-full px-8 py-3 text-sm font-bold hover:bg-gray-50 rounded-xl text-left">ไทย</button>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://hlsvoowtedlbrzigkmca.supabase.co';
+        const supabaseKey = 'sb_publishable_EzvzeTDuLQrj_sfu-kCNOw_HL3uRImy';
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        const translations = {
+            en: { balance: "Balance", topup: "Top Up", create: "Create VPN", theme: "Theme", setting: "Settings", logout: "Logout", alertTel: "Please send the screenshot after opening Telegram." },
+            mm: { balance: "လက်ကျန်ငွေ", topup: "ငွေသွင်း", create: "VPN ဆောက်မည်", theme: "ကာလာ", setting: "ပြင်ဆင်ရန်", logout: "ထွက်ရန်", alertTel: "Telegram ပွင့်လာပါက စလစ်ပုံကို ပို့ပေးပါ။" },
+            th: { balance: "ยอดเงิน", topup: "เติมเงิน", create: "สร้าง VPN", theme: "สี", setting: "ตั้งค่า", logout: "ออกจากระบบ", alertTel: "กรุณาส่งรูปสลิปหลังจากเปิด Telegram" }
+        };
+
+        let currentLang = localStorage.getItem('lang') || 'en';
+
+        function setLang(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+            document.getElementById('text-balance').innerText = t.balance;
+            document.getElementById('btn-topup').innerText = t.topup;
+            document.getElementById('btn-create').innerText = t.create;
+            document.getElementById('menu-theme').innerText = t.theme;
+            document.getElementById('menu-setting').innerText = t.setting;
+            document.getElementById('menu-logout').innerText = t.logout;
+            localStorage.setItem('lang', lang);
+            document.getElementById('langMenu').classList.add('hidden');
         }
 
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    username: userName, 
-                    password: userPass, 
-                    days: 30 
-                })
-            });
-
-            const result = await response.json();
-
-            if (result.status === "success") {
-                alert("အောင်မြင်သည်- " + result.message);
-            } else {
-                alert("မှားယွင်းမှုရှိသည်- " + result.message);
+        function previewSlip() {
+            const file = document.getElementById('slipInput').files[0];
+            if (file) {
+                document.getElementById('uploadText').innerText = "Selected: " + file.name;
+                document.getElementById('sendBtn').classList.remove('hidden');
             }
-        } catch (error) {
-            console.error("Error:", error);
-            alert("Server နှင့် ချိတ်ဆက်၍မရပါ။ Browser မှာ Insecure Content ကို Allow ပေးဖို့ လိုနိုင်ပါတယ်။");
         }
-    }
-</script>
 
+        function goToTelegram() {
+            const t = translations[currentLang];
+            alert(t.alertTel);
+            window.open("https://t.me/movpn2025", '_blank');
+        }
+
+        function changeColor(color) {
+            document.documentElement.style.setProperty('--main-color', color);
+            localStorage.setItem('themeColor', color);
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function toggleMenu(id) { document.getElementById(id).classList.toggle('hidden'); }
+
+        async function checkUser() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return window.location.href = "login.html";
+            document.getElementById('userEmail').innerText = user.email;
+            fetchProfile(user.id);
+        }
+
+        async function fetchProfile(userId) {
+            const { data } = await supabaseClient.from('profiles').select('balance').eq('id', userId).single();
+            if (data) document.getElementById('balance').innerText = data.balance.toFixed(2);
+        }
+
+        async function resetPassword() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            await supabaseClient.auth.resetPasswordForEmail(user.email);
+            alert("Password reset link sent to your email!");
+        }
+
+        async function handleLogout() {
+            await supabaseClient.auth.signOut();
+            window.location.href = "login.html";
+        }
+
+        window.onload = () => {
+            checkUser();
+            setLang(currentLang);
+            changeColor(localStorage.getItem('themeColor') || '#2563eb');
+        };
+    </script>
 </body>
 </html>
