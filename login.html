@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M King VPN - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 min-h-screen pb-20">
+
+    <div class="bg-blue-600 p-8 rounded-b-[3rem] shadow-lg text-white">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-xl font-bold">M King VPN</h1>
+            <button onclick="logout()" class="text-xs bg-blue-500 px-3 py-1 rounded-full">Logout</button>
+        </div>
+        <p class="text-blue-100 text-sm">CURRENT BALANCE</p>
+        <div class="text-5xl font-black mt-1"><span id="balance">0</span> <span class="text-xl font-normal">THB</span></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 p-6 -mt-8">
+        <button onclick="alert('VPN System Coming Soon!')" class="bg-white p-6 rounded-3xl shadow-md border border-gray-100 flex flex-col items-center">
+            <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-3 text-blue-600 text-2xl">+</div>
+            <span class="font-bold text-gray-700">Create VPN</span>
+        </button>
+        <button onclick="openTopUpModal()" class="bg-white p-6 rounded-3xl shadow-md border border-gray-100 flex flex-col items-center">
+            <div class="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center mb-3 text-green-600 text-2xl">฿</div>
+            <span class="font-bold text-gray-700">TopUp</span>
+        </button>
+    </div>
+
+    <div id="topupModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-6 z-50">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8">
+            <h2 class="text-xl font-bold mb-4">Top Up</h2>
+            <p class="text-sm text-gray-500 mb-4">Scan QR & Upload Slip</p>
+            <img src="https://hlsvoowtedlbrzigkmca.supabase.co/storage/v1/object/public/assets/qr.jpg" class="w-full rounded-2xl mb-4" alt="K-Bank QR">
+            <input type="file" id="slipInput" class="hidden" onchange="handleSlipUpload(event)">
+            <button onclick="document.getElementById('slipInput').click()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl mb-3">
+                Upload Slip
+            </button>
+            <button onclick="closeTopUpModal()" class="w-full text-gray-400 font-bold py-2">Close</button>
+        </div>
+    </div>
+
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around p-4">
+        <button class="text-blue-600 flex flex-col items-center"><span class="text-xl">🏠</span><span class="text-[10px]">HOME</span></button>
+        <button class="text-gray-400 flex flex-col items-center"><span class="text-xl">👤</span><span class="text-[10px]">USERS</span></button>
+        <button class="text-gray-400 flex flex-col items-center"><span class="text-xl">⚙️</span><span class="text-[10px]">SETTINGS</span></button>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://hlsvoowtedlbrzigkmca.supabase.co';
+        const supabaseKey = 'sb_publishable_EzvzeTDuLQrj_sfu-kCNOw_HL3uRImy'; // မင်းရဲ့ Key အမှန်ပြန်ထည့်ပါ
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        // ၁။ User Balance ကို သွားယူမယ်
+        async function fetchBalance() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return window.location.href = "login.html";
+
+            let { data, error } = await supabaseClient
+                .from('profiles')
+                .select('balance')
+                .eq('id', user.id)
+                .single();
+
+            if (data) {
+                document.getElementById('balance').innerText = data.balance;
+            } else if (error && error.code === 'PGRST116') {
+                // Profile မရှိသေးရင် အသစ်ဆောက်မယ်
+                await supabaseClient.from('profiles').insert([{ id: user.id, email: user.email, balance: 0 }]);
+            }
+        }
+
+        // ၂။ Modal ဖွင့်/ပိတ်
+        function openTopUpModal() { document.getElementById('topupModal').classList.remove('hidden'); document.getElementById('topupModal').classList.add('flex'); }
+        function closeTopUpModal() { document.getElementById('topupModal').classList.add('hidden'); document.getElementById('topupModal').classList.remove('flex'); }
+
+        // ၃။ Slip တင်တဲ့အခါ အလုပ်လုပ်မယ့်အပိုင်း
+        async function handleSlipUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            alert("EasySlip API Key မရှိသေးတာကြောင့် လောလောဆယ် Manual စစ်ဆေးပေးပါမည်။");
+            // ဒီနေရာမှာ EasySlip ရလာရင် API Code တွေ ထည့်ရမယ်
+            closeTopUpModal();
+        }
+
+        async function logout() { await supabaseClient.auth.signOut(); window.location.href = "login.html"; }
+
+        // Page စဖွင့်တာနဲ့ Balance ကို ဖတ်မယ်
+        fetchBalance();
+    </script>
+</body>
+</html>
