@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M King VPN - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --main-color: #059669; } /*     */
+        body { background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%); min-height: 100vh; }
+        .bg-custom { background-color: var(--main-color); }
+        .text-custom { color: var(--main-color); }
+        .border-custom { border-color: var(--main-color); }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-6 relative">
+
+    <div class="absolute top-6 right-6 flex gap-2">
+        <button onclick="setLang('en')" class="bg-white px-3 py-2 rounded-xl shadow-sm text-xs font-bold hover:bg-gray-50">EN</button>
+        <button onclick="setLang('mm')" class="bg-white px-3 py-2 rounded-xl shadow-sm text-xs font-bold hover:bg-gray-50"></button>
+        <button onclick="setLang('th')" class="bg-white px-3 py-2 rounded-xl shadow-sm text-xs font-bold hover:bg-gray-50"></button>
+    </div>
+
+    <div class="max-w-sm w-full bg-white p-8 rounded-[2.5rem] shadow-2xl border border-white">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-black text-custom italic tracking-tighter">M KING VPN</h1>
+            <p id="sub-title" class="text-gray-400 text-sm mt-2 font-medium">Safe & Fast Connection</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label id="lbl-email" class="text-[10px] font-bold text-gray-400 ml-4 mb-1 block uppercase tracking-widest">Email Address</label>
+                <div class="relative">
+                    <i class="fa-solid fa-envelope absolute left-4 top-4 text-gray-300"></i>
+                    <input type="email" id="email" placeholder="example@gmail.com" 
+                        class="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-400 border border-gray-100 transition-all text-gray-700">
+                </div>
+            </div>
+            
+            <div>
+                <label id="lbl-pass" class="text-[10px] font-bold text-gray-400 ml-4 mb-1 block uppercase tracking-widest">Password</label>
+                <div class="relative">
+                    <i class="fa-solid fa-lock absolute left-4 top-4 text-gray-300"></i>
+                    <input type="password" id="pass" placeholder="••••••••" 
+                        class="w-full pl-12 pr-12 py-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-400 border border-gray-100 transition-all text-gray-700">
+                    <button onclick="togglePass()" class="absolute right-4 top-4 text-gray-300 hover:text-emerald-500">
+                        <i id="eye-icon" class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="pt-4 space-y-3">
+                <button id="btn-login" onclick="handleAuth('signin')" class="w-full bg-custom text-white font-bold py-4 rounded-2xl shadow-lg hover:brightness-110 active:scale-95 transition-all uppercase">
+                    LOGIN
+                </button>
+                <button id="btn-register" onclick="handleAuth('signup')" class="w-full border-2 border-custom text-custom font-bold py-4 rounded-2xl hover:bg-emerald-50 active:scale-95 transition-all uppercase">
+                    REGISTER
+                </button>
+            </div>
+        </div>
+        
+        <p id="msg" class="text-center text-[11px] mt-6 font-bold text-gray-400 h-4"></p>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://hlsvoowtedlbrzigkmca.supabase.co';
+        const supabaseKey = 'sb_publishable_EzvzeTDuLQrj_sfu-kCNOw_HL3uRImy';
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        const translations = {
+            en: { sub: "Safe & Fast Connection", email: "Email Address", pass: "Password", login: "LOGIN", register: "REGISTER", alertEmail: "Please enter email and password" },
+            mm: { sub: " ", email: " ", pass: "", login: "", register: "", alertEmail: "Email  Password " },
+            th: { sub: "", email: "", pass: "", login: "", register: "", alertEmail: "" }
+        };
+
+        let currentLang = localStorage.getItem('lang') || 'en';
+
+        function setLang(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+            document.getElementById('sub-title').innerText = t.sub;
+            document.getElementById('lbl-email').innerText = t.email;
+            document.getElementById('lbl-pass').innerText = t.pass;
+            document.getElementById('btn-login').innerText = t.login;
+            document.getElementById('btn-register').innerText = t.register;
+            localStorage.setItem('lang', lang);
+        }
+
+        // Password  /  function
+        function togglePass() {
+            const passInput = document.getElementById('pass');
+            const eyeIcon = document.getElementById('eye-icon');
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                passInput.type = "password";
+                eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        async function handleAuth(type) {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('pass').value;
+            const msg = document.getElementById('msg');
+            const t = translations[currentLang];
+
+            if(!email || !password) return alert(t.alertEmail);
+            msg.innerText = "Processing...";
+
+            try {
+                let res;
+                if(type === 'signup') {
+                    res = await supabaseClient.auth.signUp({ email, password });
+                    if(!res.error) alert("Success! Please Login.");
+                } else {
+                    res = await supabaseClient.auth.signInWithPassword({ email, password });
+                    if(!res.error) window.location.href = "index.html";
+                }
+                if(res.error) throw res.error;
+            } catch (err) {
+                alert(err.message);
+                msg.innerText = err.message;
+            }
+        }
+
+        window.onload = () => {
+            setLang(currentLang);
+            const savedColor = localStorage.getItem('themeColor') || '#059669';
+            document.documentElement.style.setProperty('--main-color', savedColor);
+        };
+    </script>
+</body>
+</html>
