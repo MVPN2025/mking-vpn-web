@@ -1,41 +1,62 @@
-// ၁။ မင်းရဲ့ VPS IP ကို သတ်မှတ်ခြင်း
-const API_URL = "http://157.85.97.140:5000/create-ssh";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M KING VPN DASHBOARD</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input { display: block; width: 100%; margin-bottom: 10px; padding: 10px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
 
-async function createVPN() {
-    const userName = document.getElementById('vpn_username').value;
-    const userPass = document.getElementById('vpn_password').value;
+<div class="card">
+    <h2>Create VPN Account</h2>
+    <input type="text" id="vpn_username" placeholder="Username">
+    <input type="password" id="vpn_password" placeholder="Password">
+    <button onclick="createVPN()">+ Create VPN</button>
+</div>
 
-    // အချက်အလက် ပြည့်စုံမှု ရှိမရှိ စစ်ဆေးခြင်း
-    if (!userName || !userPass) {
-        alert("ကျေးဇူးပြု၍ Username နှင့် Password ထည့်ပါ။");
-        return;
-    }
+<script>
+    // မင်းရဲ့ VPS IP နဲ့ ချိတ်ထားတဲ့ API URL
+    const API_URL = "http://157.85.97.140:5000/create-ssh";
 
-    try {
-        // ၂။ VPS API ဆီသို့ Data ပို့ခြင်း
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                username: userName,
-                password: userPass,
-                days: 30 // သက်တမ်း ရက် ၃၀ သတ်မှတ်ချက်
-            })
-        });
+    async function createVPN() {
+        const userName = document.getElementById('vpn_username').value;
+        const userPass = document.getElementById('vpn_password').value;
 
-        const result = await response.json();
-
-        if (result.status === "success") {
-            alert("အောင်မြင်သည်- " + result.message);
-            // Balance နှုတ်ခြင်း သို့မဟုတ် Dashboard Update လုပ်ခြင်း ကုဒ်များ ဤနေရာတွင် ဆက်ရေးနိုင်သည်
-        } else {
-            alert("မှားယွင်းမှုရှိသည်- " + result.message);
+        if (!userName || !userPass) {
+            alert("ကျေးဇူးပြု၍ Username နှင့် Password ထည့်ပါ။");
+            return;
         }
-    } catch (error) {
-        console.error("Error:", error);
-        alert("Server နှင့် ချိတ်ဆက်၍မရပါ။ API Run ထားခြင်း ရှိမရှိ ပြန်စစ်ပါ။");
-    }
-}
 
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    username: userName, 
+                    password: userPass, 
+                    days: 30 
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.status === "success") {
+                alert("အောင်မြင်သည်- " + result.message);
+            } else {
+                alert("မှားယွင်းမှုရှိသည်- " + result.message);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Server နှင့် ချိတ်ဆက်၍မရပါ။ Browser မှာ Insecure Content ကို Allow ပေးဖို့ လိုနိုင်ပါတယ်။");
+        }
+    }
+</script>
+
+</body>
+</html>
